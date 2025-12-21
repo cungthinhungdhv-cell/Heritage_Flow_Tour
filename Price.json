@@ -1,0 +1,82 @@
+{
+  "tourId": "tour_3",
+  "transport": {
+    "car4": "1100000",
+    "car7": "1500000",
+    "car16": "2000000"
+  },
+  "profit": {
+    "adultPercent": "83.5",
+    "adultVnd": "1100000",
+    "child1Percent": "0",
+    "child1Vnd": "0",
+    "child2Percent": "43.1",
+    "child2Vnd": "300000",
+    "minProfit1Person": "2100000",
+    "minProfit2People": "2900000",
+    "minProfit3Plus": "3300000"
+  },
+  "staff": [
+    {
+      "name": "Гид 1 день",
+      "dailyRate": "600000"
+    },
+    {
+      "name": "Питание",
+      "dailyRate": "200000"
+    },
+    {
+      "name": "Прочие расходы",
+      "dailyRate": "250000"
+    }
+  ],
+  "tickets": [
+    {
+      "name": "Святилище Ми Шон",
+      "adultPrice": "150000",
+      "child1Price": "0",
+      "child2Price": "30000"
+    },
+    {
+      "name": "Кокосовый лес ",
+      "adultPrice": "80000",
+      "child1Price": "0",
+      "child2Price": "40000"
+    },
+    {
+      "name": "Хой Ан вход",
+      "adultPrice": "120000",
+      "child1Price": "0",
+      "child2Price": "60000"
+    },
+    {
+      "name": "Memories Show",
+      "adultPrice": "600000",
+      "child1Price": "0",
+      "child2Price": "200000"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "Группа 1",
+      "adults": "2",
+      "children1": "0",
+      "children2": "0"
+    },
+    {
+      "name": "Группа 2",
+      "adults": "4",
+      "children1": "0",
+      "children2": "0"
+    },
+    {
+      "name": "Группа 3",
+      "adults": "2",
+      "children1": "0",
+      "children2": "2"
+    }
+  ],
+  "scenarioCounter": 24,
+  "ticketCounter": 5,
+  "staffCounter": 13
+}
