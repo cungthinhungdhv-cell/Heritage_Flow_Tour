@@ -1883,28 +1883,13 @@
         }
 
         // Конфигурация из Price.json (Поток наследия - Ми Шон, Хойан)
+        // Себестоимость и маржа здесь НЕ хранятся — финальная цена считается на сервере.
+        // В исходнике только то, что показывается клиенту: транспорт и реальные цены билетов.
         const CONFIG = {
             transport: {
                 car4: 1100000,   // до 3 человек
                 car7: 1500000,   // до 6 человек
                 car16: 2000000   // до 15 человек
-            },
-            profit: {
-                adultVnd: 1100000,    // маржа с взрослого
-                child1Vnd: 0,         // маржа с ребёнка до 1м (бесплатно)
-                child2Vnd: 300000,    // маржа с ребёнка 1-1.4м
-                minProfit1Person: 2100000,
-                minProfit2People: 2900000,
-                minProfit3Plus: 3300000
-            },
-            staff: {
-                total: 1050000  // гид + питание + прочие расходы
-            },
-            tickets: {
-                // Ми Шон + Кокосовый лес + Хой Ан вход + Memories Show
-                adultPrice: 950000,    // 150,000 + 80,000 + 120,000 + 600,000
-                child1Price: 0,        // дети до 1м бесплатно
-                child2Price: 330000    // 30,000 + 40,000 + 60,000 + 200,000
             },
             // Реальные цены билетов для отображения клиентам (без B2B)
             displayPrices: {
@@ -1959,7 +1944,7 @@
         }
 
         // Основная функция расчёта
-        function calculateTour() {
+        async function calculateTour() {
             const adults = parseInt(document.getElementById('calc-adults').value) || 0;
             const children1 = parseInt(document.getElementById('calc-children1').value) || 0;
             const children2 = parseInt(document.getElementById('calc-children2').value) || 0;
@@ -1983,42 +1968,24 @@
 
             const totalPeople = adults + children1 + children2;
 
-            // 1. Расчёт билетов
+            // VIP-доплата на шоу (на платного человека) — показывается клиенту
             const vipUpgrade = vipEnabled ? CONFIG.vip.upgradePrice : 0;
-            const ticketsTotal =
-                (adults * (CONFIG.tickets.adultPrice + vipUpgrade)) +
-                (children1 * CONFIG.tickets.child1Price) +
-                (children2 * (CONFIG.tickets.child2Price + vipUpgrade));
 
-            // 2. Выбор транспорта
+            // Транспорт — для блока «включено» (не секрет)
             const car = selectCar(totalPeople);
 
-            // 3. Расчёт себестоимости
-            const costTotal = ticketsTotal + CONFIG.staff.total + car.price;
+            // Финальная цена — с сервера (источник правды). Маржа/себестоимость на сервере.
+            const priceData = await fetchLivePrice(adults, children1, children2);
+            if (!priceData) {
+                errorEl.textContent = 'Не удалось получить актуальную цену. Напишите нам в Telegram — подскажем стоимость.';
+                errorEl.classList.add('visible');
+                resultEl.classList.remove('visible');
+                return;
+            }
 
-            // 4. Расчёт маржи
-            let profitTotal =
-                (adults * CONFIG.profit.adultVnd) +
-                (children1 * CONFIG.profit.child1Vnd) +
-                (children2 * CONFIG.profit.child2Vnd);
-
-            // 5. Применяем минимальную маржу (дети до 1м не учитываются)
+            // База с сервера + VIP-доплата на шоу (на платного человека) поверх
             const payingPeople = adults + children2;
-            let minProfit;
-            if (payingPeople === 1) {
-                minProfit = CONFIG.profit.minProfit1Person;
-            } else if (payingPeople === 2) {
-                minProfit = CONFIG.profit.minProfit2People;
-            } else {
-                minProfit = CONFIG.profit.minProfit3Plus;
-            }
-
-            if (profitTotal < minProfit) {
-                profitTotal = minProfit;
-            }
-
-            // 6. Финальная цена
-            let finalPrice = costTotal + profitTotal;
+            let finalPrice = priceData.totalPrice + payingPeople * vipUpgrade;
 
             if (isAgentMode) {
                 const markupVnd = ((agentMarkupPerPerson + agentFood) * totalPeople + agentMarkupTotal) * vndPerUsd;
@@ -2082,10 +2049,31 @@
             });
         });
 
+        // === Финальная цена с сервера tours.itripster.com (источник правды) ===
+        // Себестоимость и маржа считаются на сервере и в браузер не передаются.
+        const TOUR_ID = 'tour_3';
+        const PRICE_API = 'https://tours.itripster.com/api/public/price/' + TOUR_ID;
+        let priceReqSeq = 0;
+        async function fetchLivePrice(adults, children1, children2) {
+            const my = ++priceReqSeq;
+            const cacheKey = `price_${TOUR_ID}_${adults}_${children1}_${children2}`;
+            try {
+                const r = await fetch(`${PRICE_API}?adults=${adults}&children1=${children1}&children2=${children2}`, { cache: 'no-store' });
+                if (!r.ok) throw new Error('http ' + r.status);
+                const data = await r.json();
+                if (my !== priceReqSeq) return null;
+                try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) {}
+                return data;
+            } catch (e) {
+                try { const c = localStorage.getItem(cacheKey); if (c) return JSON.parse(c); } catch (e2) {}
+                return null;
+            }
+        }
+
         // Начальный расчёт при загрузке
         document.addEventListener('DOMContentLoaded', async () => {
             await fetchUsdRate();
-            calculateTour();
+            await calculateTour();
         });
     </script>
 </body>
